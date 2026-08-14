@@ -3,7 +3,7 @@ import pandas as pd
 
 # Extract
 db_engine = sqlalchemy.create_engine(
-    "postgresql+psycopg2://postgres:password123@localhost:5432/PopCRT"
+    "postgresql+psycopg2://maniselvank:password123@localhost:5432/basic_etl"
 )
 
 
@@ -44,8 +44,8 @@ def calculate_CTR_per_campaign(tablename, db_engine):
             SELECT  campaign_id, 
                     campaign_name, 
                     COUNT(is_click::boolean)::numeric AS impressions_per_campaign, 
-                    COUNT(is_click::boolean) FILTER(WHERE is_click = TRUE)::numeric AS clicked_campaign, 
-                    ROUND(((COUNT(is_click::boolean) FILTER(WHERE is_click = TRUE)::numeric) /  (COUNT(is_click::boolean))::numeric)*100, 2) AS CTR_per_campaign 
+                    COUNT(is_click::boolean) FILTER(WHERE is_click = 1)::numeric AS clicked_campaign, 
+                    ROUND(((COUNT(is_click::boolean) FILTER(WHERE is_click = 1)::numeric) /  (COUNT(is_click::boolean))::numeric)*100, 2) AS CTR_per_campaign 
             FROM {tablename} 
             GROUP BY campaign_id, campaign_name 
             ORDER BY CTR_per_campaign DESC;
