@@ -13,7 +13,23 @@ The Python libraries used in this simple project are SQLAlchemy and Pandas. SQLA
 
 ## Step-by-Step Execution Guide
 
-### Step 1: Install PostgreSQL on Mac
+### Step 1: Set Up Python Virtual Environment
+
+```bash
+# Navigate to project directory
+cd /Users/maniselvank/Mani/python_lab/basic_etl01/basic-etl-1
+
+# Create virtual environment
+python3 -m venv .venv
+
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install required dependencies
+pip install sqlalchemy pandas psycopg2-binary
+```
+
+### Step 2: Install PostgreSQL on Mac
 
 ```bash
 # Install PostgreSQL using Homebrew
@@ -27,7 +43,7 @@ psql --version
 # Expected output: psql (PostgreSQL) 16.15 (Homebrew)
 ```
 
-### Step 2: Create Database and Connect
+### Step 3: Create Database and Connect
 
 ```bash
 # Connect to PostgreSQL default database
@@ -46,7 +62,7 @@ CREATE DATABASE basic_etl;
 \q
 ```
 
-### Step 3: Create Tables in PostgreSQL
+### Step 4: Create Tables in PostgreSQL
 
 ```bash
 # Connect to basic_etl database
@@ -83,7 +99,7 @@ CREATE TABLE sales_data (
 \q
 ```
 
-### Step 4: Load CSV Data into PostgreSQL
+### Step 5: Load CSV Data into PostgreSQL
 
 ```bash
 # Connect to basic_etl database
@@ -103,22 +119,6 @@ SELECT COUNT(*) FROM sales_data;
 
 # Exit psql
 \q
-```
-
-### Step 5: Set Up Python Virtual Environment
-
-```bash
-# Navigate to project directory
-cd /Users/maniselvank/Mani/python_lab/basic_etl01/basic-etl-1
-
-# Create virtual environment
-python3 -m venv .venv
-
-# Activate virtual environment
-source .venv/bin/activate
-
-# Install required dependencies
-pip install sqlalchemy pandas psycopg2-binary
 ```
 
 ### Step 6: Configure Database Connection (Update basic-etl-1.py)
