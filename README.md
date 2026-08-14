@@ -13,175 +13,194 @@ The Python libraries used in this simple project are SQLAlchemy and Pandas. SQLA
 
 ## Step-by-Step Execution Guide
 
-### 1. PostgreSQL Setup on Mac
+### Step 1: Install PostgreSQL on Mac
 
-#### Option A: Using Homebrew (Recommended)
 ```bash
-# Install Homebrew if not already installed
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Install PostgreSQL using Homebrew
+brew install postgresql@16
 
-# Install PostgreSQL
-brew install postgresql@15
-
-# Start PostgreSQL service
-brew services start postgresql@15
+# Start the PostgreSQL service
+brew services start postgresql@16
 
 # Verify installation
-postgres --version
+psql --version
+# Expected output: psql (PostgreSQL) 16.15 (Homebrew)
 ```
 
-#### Option B: Using PostgreSQL Official Installer
-- Download from [postgresql.org](https://www.postgresql.org/download/macosx/)
-- Follow the installer wizard
-- Remember the password you set for the `postgres` user
-
-### 2. Database Creation
+### Step 2: Create Database and Connect
 
 ```bash
-# Connect to PostgreSQL as the default postgres user
-psql -U postgres
+# Connect to PostgreSQL default database
+psql -d postgres
 
-# Inside psql, create a new database
-CREATE DATABASE etl_lab;
+# Create the basic_etl database
+CREATE DATABASE basic_etl;
 
-# Verify database creation
+# Connect to the new database
+\c basic_etl
+
+# List all databases to verify
 \l
 
 # Exit psql
 \q
 ```
 
-### 3. Table Creation
-
-Connect to the database and create tables:
+### Step 3: Create Tables in PostgreSQL
 
 ```bash
-# Connect to the etl_lab database
-psql -U postgres -d etl_lab
-
-# Create sales_data table
-CREATE TABLE sales_data (
-    id SERIAL PRIMARY KEY,
-    product VARCHAR(255),
-    quantity INTEGER,
-    price DECIMAL(10, 2),
-    sale_date DATE,
-    region VARCHAR(100)
-);
+# Connect to basic_etl database
+psql -d basic_etl
 
 # Create marketing_impressions table
 CREATE TABLE marketing_impressions (
-    id SERIAL PRIMARY KEY,
+    session_id INTEGER,
+    user_id INTEGER,
     campaign_id INTEGER,
-    impressions INTEGER,
-    clicks INTEGER,
-    date DATE,
-    channel VARCHAR(100)
+    campaign_name VARCHAR(255),
+    webpage_id INTEGER,
+    product_category VARCHAR(255),
+    gender VARCHAR(50),
+    age_level VARCHAR(50),
+    region VARCHAR(100),
+    is_click INTEGER
 );
 
-# Verify table creation
+# Create sales_data table
+CREATE TABLE sales_data (
+    session_id INTEGER,
+    user_id INTEGER,
+    product_category VARCHAR(255),
+    region VARCHAR(100),
+    is_campaign INTEGER,
+    total_php INTEGER
+);
+
+# Verify tables created
 \dt
 
 # Exit psql
 \q
 ```
 
-### 4. Load Data from CSV Files
+### Step 4: Load CSV Data into PostgreSQL
 
 ```bash
-# Connect to the etl_lab database
-psql -U postgres -d etl_lab
+# Connect to basic_etl database
+psql -d basic_etl
 
-# Import sales_data.csv
-\COPY sales_data(product, quantity, price, sale_date, region) FROM '/path/to/sales_data.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',');
+# Load marketing_impressions data from CSV
+\copy marketing_impressions FROM 'marketing_impressions_.csv' CSV HEADER;
+# Expected: COPY 128858
 
-# Import marketing_impressions_.csv
-\COPY marketing_impressions(campaign_id, impressions, clicks, date, channel) FROM '/path/to/marketing_impressions_.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',');
+# Load sales_data from CSV
+\copy sales_data FROM 'sales_data.csv' CSV HEADER;
+# Expected: COPY 99999
 
-# Verify data was loaded
-SELECT COUNT(*) FROM sales_data;
+# Verify data loaded correctly
 SELECT COUNT(*) FROM marketing_impressions;
+SELECT COUNT(*) FROM sales_data;
 
 # Exit psql
 \q
 ```
 
-**Note:** Replace `/path/to/` with the actual path to your CSV files in the repository.
-
-### 5. Python Environment Setup
+### Step 5: Set Up Python Virtual Environment
 
 ```bash
-# Navigate to the project directory
-cd /path/to/basic-etl-1
+# Navigate to project directory
+cd /Users/maniselvank/Mani/python_lab/basic_etl01/basic-etl-1
 
-# Create a virtual environment
+# Create virtual environment
 python3 -m venv .venv
 
-# Activate the virtual environment
+# Activate virtual environment
 source .venv/bin/activate
 
 # Install required dependencies
-pip install -r requirements.txt
-# or manually install:
 pip install sqlalchemy pandas psycopg2-binary
 ```
 
-### 6. Configure Database Connection
+### Step 6: Configure Database Connection (Update basic-etl-1.py)
 
-Update the database connection string in your Python script:
+Edit `basic-etl-1.py` and update the database connection string:
 
 ```python
-# In basic-etl-1.py, update the connection string:
-DATABASE_URL = "postgresql://postgres:your_password@localhost:5432/etl_lab"
+db_engine = sqlalchemy.create_engine(
+    "postgresql+psycopg2://maniselvank@localhost:5432/basic_etl"
+)
 
-# Create engine
-engine = create_engine(DATABASE_URL)
 ```
 
-**Note:** Replace `your_password` with the password you set for the PostgreSQL `postgres` user.
+**Note:** Use your macOS username (e.g., maniselvank) instead of 'postgres'
 
-### 7. Run the Python Script
+### Step 7: Fix Table Names and SQL Queries (if needed)
+
+If the script references a table name that doesn't exist, rename it:
 
 ```bash
-# Make sure you're in the project directory with the virtual environment activated
-cd /path/to/basic-etl-1
+psql -d basic_etl
+
+# Example: Rename sales_data to sales if script expects 'sales' table
+ALTER TABLE sales_data RENAME TO sales;
+
+# Exit
+\q
+```
+
+**Common SQL Issues:**
+- Change `WHERE is_click = TRUE` to `WHERE is_click = 1` (comparing integer, not boolean)
+- Ensure table names match between CSV import and Python script expectations
+
+### Step 8: Run the ETL Python Script
+
+```bash
+# Make sure virtual environment is activated
 source .venv/bin/activate
 
 # Execute the ETL script
-python basic-etl-1.py
+python3 basic-etl-1.py
 
-# Expected output:
-# - Data extracted from sales_data and marketing_impressions tables
-# - Data transformed (INNER JOIN applied)
-# - Transformed data loaded to a new table in PostgreSQL
+# Expected Output:
+# - Extracts 128,858 marketing records
+# - Extracts 99,999 sales records
+# - Transforms via INNER JOIN → 131,051 matched records
+# - Loads analysis_marketing_sales table to PostgreSQL
+# - Calculates CTR (Click-Through Rate) per campaign
 ```
 
-### 8. Verify the Results
+### Step 9: Verify Results in PostgreSQL
 
 ```bash
-# Connect to the database
-psql -U postgres -d etl_lab
+# Connect to database
+psql -d basic_etl
 
-# Check the newly created table (usually named 'pseudo_data_warehouse' or similar)
-SELECT * FROM pseudo_data_warehouse LIMIT 5;
+# Check tables created
+\dt
 
-# Check row count
-SELECT COUNT(*) FROM pseudo_data_warehouse;
+# Count rows in analysis table
+SELECT COUNT(*) FROM analysis_marketing_sales;
+# Expected: 131051
 
-# Exit psql
+# View sample data
+SELECT * FROM analysis_marketing_sales LIMIT 5;
+
+# Exit
 \q
 ```
 
 ---
 
-## Troubleshooting
+## Troubleshooting & Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| `psql: command not found` | Add PostgreSQL to PATH: `export PATH="/usr/local/opt/postgresql@15/bin:$PATH"` |
-| `FATAL: role "postgres" does not exist` | Recreate the postgres user or use your system username |
-| `Connection refused` | Ensure PostgreSQL service is running: `brew services start postgresql@15` |
-| `CSV import fails` | Check file path is absolute, file exists, and permissions are correct |
-| `ModuleNotFoundError: sqlalchemy` | Activate virtual environment: `source .venv/bin/activate` |
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `connection to server at "localhost" (::1), port 5432 failed: FATAL: role "postgres" does not exist` | Homebrew doesn't create postgres role on macOS | Use your macOS username in connection string: `postgresql+psycopg2://maniselvank@localhost:5432/basic_etl` |
+| `relation "sales" does not exist` | Table name mismatch between script and database | Rename table: `ALTER TABLE sales_data RENAME TO sales;` |
+| `operator does not exist: integer = boolean` | Script compares integer with TRUE instead of 1 | Replace `WHERE is_click = TRUE` with `WHERE is_click = 1` |
+| `psql: command not found` | PostgreSQL bin not in PATH | Run: `export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"` |
+| `CONNECT tunnel failed, response 403` | Network connectivity issue with GitHub | Check internet connection; retry git push |
+| `ModuleNotFoundError: sqlalchemy` | Dependencies not installed | Install: `pip install sqlalchemy pandas psycopg2-binary` |
+| `psql: error: connection to server on socket "/tmp/.s.PGSQL.5432" failed` | PostgreSQL service not running | Start service: `brew services start postgresql@16` |
 
 ---
