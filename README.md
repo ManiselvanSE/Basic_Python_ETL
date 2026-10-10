@@ -17,7 +17,7 @@ The Python libraries used in this simple project are SQLAlchemy and Pandas. SQLA
 
 ```bash
 # Navigate to project directory
-cd /Users/maniselvank/Mani/python_lab/basic_etl01/basic-etl-1
+cd basic-etl-1
 
 # Create virtual environment
 python3 -m venv .venv
